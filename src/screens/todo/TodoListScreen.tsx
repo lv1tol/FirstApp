@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { TodoListNavProps, TodoListRouteProp, Todo } from '../../navigation/types';
+import UseCurrentDate from '../../hooks/UseCurrentDate';
 
 const colors = {
   background: '#f0f8ff',
@@ -28,24 +29,12 @@ const colors = {
   error: '#dc3545',
 };
 
-const formatDate = (date: Date): string => {
-  const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
-  const day = date.getDate();
-  let daySuffix = 'th';
-  if (day === 1 || day === 21 || day === 31) daySuffix = 'st';
-  else if (day === 2 || day === 22) daySuffix = 'nd';
-  else if (day === 3 || day === 23) daySuffix = 'rd';
-  let formatted = new Intl.DateTimeFormat('en-GB', options).format(date);
-  formatted = formatted.replace(day.toString(), `${day}${daySuffix}`);
-  return formatted;
-};
-
 const TodoListScreen: React.FC<TodoListNavProps> = ({ navigation }) => {
   const route = useRoute<TodoListRouteProp>();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentDate, setCurrentDate] = useState<string>('');
+  const currentDate = UseCurrentDate(); // Use the custom hook here
 
   const fetchTodos = useCallback(async () => {
     try {
@@ -57,35 +46,34 @@ const TodoListScreen: React.FC<TodoListNavProps> = ({ navigation }) => {
       }
       const data = await response.json();
       if (data && Array.isArray(data.todos)) {
-          setTodos(data.todos);
+        setTodos(data.todos);
       } else {
-          throw new Error('Invalid data structure received');
+        throw new Error('Invalid data structure received');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
-      console.error("Fetch error: ", err);
+      console.error('Fetch error: ', err);
       setTodos([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-   useFocusEffect(
-     useCallback(() => {
-       setCurrentDate(formatDate(new Date()));
-       if (todos.length === 0) {
-           fetchTodos();
-       }
-     }, [fetchTodos, todos.length])
-   );
+  useFocusEffect(
+    useCallback(() => {
+      if (todos.length === 0) {
+        fetchTodos();
+      }
+    }, [fetchTodos, todos.length])
+  );
 
-   useEffect(() => {
-     if (route.params?.newTodo) {
-         const newTodoItem = route.params.newTodo;
-         setTodos(prevTodos => [newTodoItem, ...prevTodos]);
-         navigation.setParams({ newTodo: undefined });
-     }
-   }, [route.params?.newTodo, navigation]);
+  useEffect(() => {
+    if (route.params?.newTodo) {
+      const newTodoItem = route.params.newTodo;
+      setTodos(prevTodos => [newTodoItem, ...prevTodos]);
+      navigation.setParams({ newTodo: undefined });
+    }
+  }, [route.params?.newTodo, navigation]);
 
   const toggleTodoStatus = (id: number) => {
     setTodos(prevTodos =>
@@ -96,15 +84,15 @@ const TodoListScreen: React.FC<TodoListNavProps> = ({ navigation }) => {
   };
 
   const deleteLocalTodo = (id: number) => {
-       setTodos(prevTodos => prevTodos.filter(todo => todo.id !== id));
-  }
+    setTodos(prevTodos => prevTodos.filter(todo => todo.id !== id));
+  };
 
   const renderTodoItem = ({ item }: { item: Todo }) => (
     <TouchableOpacity
-        style={styles.todoItem}
-        onPress={() => toggleTodoStatus(item.id)}
-        onLongPress={() => deleteLocalTodo(item.id)}
-        activeOpacity={0.7}
+      style={styles.todoItem}
+      onPress={() => toggleTodoStatus(item.id)}
+      onLongPress={() => deleteLocalTodo(item.id)}
+      activeOpacity={0.7}
     >
       <Ionicons
         name={item.completed ? 'checkmark-circle' : 'ellipse-outline'}
@@ -115,23 +103,22 @@ const TodoListScreen: React.FC<TodoListNavProps> = ({ navigation }) => {
       <Text style={[styles.todoText, item.completed && styles.todoTextCompleted]}>
         {item.todo}
       </Text>
-       <TouchableOpacity onPress={() => deleteLocalTodo(item.id)} style={styles.deleteButton}>
-           <Ionicons name="trash-outline" size={20} color={colors.error} />
-       </TouchableOpacity>
+      <TouchableOpacity onPress={() => deleteLocalTodo(item.id)} style={styles.deleteButton}>
+        <Ionicons name="trash-outline" size={20} color={colors.error} />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 
   const ListEmptyState = () => (
-      <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Список завдань порожній.</Text>
-          <Text style={styles.emptySubText}>Натисніть "+", щоб додати нове завдання.</Text>
-      </View>
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyText}>Список завдань порожній.</Text>
+      <Text style={styles.emptySubText}>Натисніть "+", щоб додати нове завдання.</Text>
+    </View>
   );
-
 
   return (
     <SafeAreaView style={styles.safeArea}>
-       <StatusBar barStyle="dark-content" backgroundColor={colors.headerBackground} />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.headerBackground} />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>TODO List (API)</Text>
         <Text style={styles.headerDate}>{currentDate}</Text>
@@ -152,9 +139,9 @@ const TodoListScreen: React.FC<TodoListNavProps> = ({ navigation }) => {
       )}
 
       <TouchableOpacity
-         style={styles.fab}
-         activeOpacity={0.8}
-         onPress={() => navigation.navigate('AddTodo')}
+        style={styles.fab}
+        activeOpacity={0.8}
+        onPress={() => navigation.navigate('AddTodo')}
       >
         <Ionicons name="add" size={30} color={colors.white} />
       </TouchableOpacity>
